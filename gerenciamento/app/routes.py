@@ -255,6 +255,127 @@ def delete_professor(prof_id):
     db.session.commit()
     return "", 204
 
+# -----------------------
+# CRUD DE TURMAS
+# -----------------------
+
+from .models import Turma
+
+# CREATE (POST)
+@bp.post("/turmas")
+@swag_from({
+    "tags": ["Turmas"],
+    "description": "Cria uma nova turma.",
+    "parameters": [
+        {
+            "name": "body",
+            "in": "body",
+            "schema": {
+                "type": "object",
+                "properties": {
+                    "nome": {"type": "string"},
+                    "descricao": {"type": "string"}
+                },
+                "required": ["nome"]
+            }
+        }
+    ],
+    "responses": {201: {"description": "Turma criada com sucesso."}}
+})
+def create_turma():
+    data = request.get_json() or {}
+    nome = data.get("nome")
+    descricao = data.get("descricao")
+
+    if not nome:
+        return jsonify({"error": "O campo nome é obrigatório"}), 400
+
+    turma = Turma(nome=nome, descricao=descricao)
+    db.session.add(turma)
+    db.session.commit()
+    return jsonify({"id": turma.id, "nome": turma.nome, "descricao": turma.descricao}), 201
+
+
+# READ (GET ALL)
+@bp.get("/turmas")
+@swag_from({
+    "tags": ["Turmas"],
+    "description": "Lista todas as turmas cadastradas.",
+    "responses": {200: {"description": "Lista de turmas."}}
+})
+def list_turmas():
+    turmas = Turma.query.all()
+    result = [{"id": t.id, "nome": t.nome, "descricao": t.descricao} for t in turmas]
+    return jsonify(result)
+
+
+# READ (GET BY ID)
+@bp.get("/turmas/<int:turma_id>")
+@swag_from({
+    "tags": ["Turmas"],
+    "description": "Busca uma turma pelo ID.",
+    "parameters": [{"name": "turma_id", "in": "path", "type": "integer", "required": True}],
+    "responses": {200: {"description": "Turma encontrada."}, 404: {"description": "Turma não encontrada."}}
+})
+def get_turma(turma_id):
+    turma = Turma.query.get(turma_id)
+    if not turma:
+        return jsonify({"error": "Turma não encontrada"}), 404
+    return jsonify({"id": turma.id, "nome": turma.nome, "descricao": turma.descricao})
+
+
+# UPDATE (PUT)
+@bp.put("/turmas/<int:turma_id>")
+@swag_from({
+    "tags": ["Turmas"],
+    "description": "Atualiza os dados de uma turma.",
+    "parameters": [
+        {"name": "turma_id", "in": "path", "type": "integer", "required": True},
+        {
+            "name": "body",
+            "in": "body",
+            "schema": {
+                "type": "object",
+                "properties": {
+                    "nome": {"type": "string"},
+                    "descricao": {"type": "string"}
+                }
+            }
+        }
+    ],
+    "responses": {200: {"description": "Turma atualizada."}, 404: {"description": "Turma não encontrada."}}
+})
+def update_turma(turma_id):
+    turma = Turma.query.get(turma_id)
+    if not turma:
+        return jsonify({"error": "Turma não encontrada"}), 404
+
+    data = request.get_json() or {}
+    turma.nome = data.get("nome", turma.nome)
+    turma.descricao = data.get("descricao", turma.descricao)
+    db.session.commit()
+
+    return jsonify({"id": turma.id, "nome": turma.nome, "descricao": turma.descricao})
+
+
+# DELETE
+@bp.delete("/turmas/<int:turma_id>")
+@swag_from({
+    "tags": ["Turmas"],
+    "description": "Remove uma turma.",
+    "parameters": [{"name": "turma_id", "in": "path", "type": "integer", "required": True}],
+    "responses": {204: {"description": "Turma removida."}, 404: {"description": "Turma não encontrada."}}
+})
+def delete_turma(turma_id):
+    turma = Turma.query.get(turma_id)
+    if not turma:
+        return jsonify({"error": "Turma não encontrada"}), 404
+
+    db.session.delete(turma)
+    db.session.commit()
+    return "", 204
+
+
 
 
 # -----------------------
