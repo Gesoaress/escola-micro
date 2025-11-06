@@ -177,6 +177,20 @@ python wsgi.py
        "turma_id": 1
      }
      ```
+     
+4️⃣ **Criar Professor**
+   - Acesse [http://localhost:5001/apidocs](http://localhost:5001/apidocs)
+   - Exemplo de JSON:
+     ```json
+     {
+       "nome": "Maria Fernandes",
+       "idade": 35,
+       "email": "maria.fernandes@escola.com",
+       "materia": "Português",
+       "observacoes": "Professora com especialização em linguística."
+     }
+     ```
+
 
 ---
 
