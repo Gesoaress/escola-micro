@@ -1,0 +1,48 @@
+version: "3.9"
+
+services:
+  gerenciamento:
+    build: ./gerenciamento
+    container_name: svc-gerenciamento
+    ports:
+      - "5001:5001"
+    volumes:
+      - gerenciamento_data:/data
+    networks:
+      - escola-net
+
+  reservas:
+    build: ./reservas
+    container_name: svc-reservas
+    ports:
+      - "5002:5002"
+    environment:
+      - GERENCIAMENTO_URL=http://gerenciamento:5001
+    volumes:
+      - reservas_data:/data
+    depends_on:
+      - gerenciamento
+    networks:
+      - escola-net
+
+  atividades:
+    build: ./atividades
+    container_name: svc-atividades
+    ports:
+      - "5003:5003"
+    environment:
+      - GERENCIAMENTO_URL=http://gerenciamento:5001
+    volumes:
+      - atividades_data:/data
+    depends_on:
+      - gerenciamento
+    networks:
+      - escola-net
+
+volumes:
+  gerenciamento_data:
+  reservas_data:
+  atividades_data:
+
+networks:
+  escola-net:
