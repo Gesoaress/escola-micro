@@ -150,29 +150,54 @@ from .models import Professor
             "schema": {
                 "type": "object",
                 "properties": {
-                    "nome": {"type": "string"},
-                    "email": {"type": "string"},
-                    "area": {"type": "string"}
+                    "nome": {"type": "string", "example": "Carlos Almeida"},
+                    "idade": {"type": "integer", "example": 40},
+                    "email": {"type": "string", "example": "carlos.almeida@escola.com"},
+                    "materia": {"type": "string", "example": "História"},
+                    "observacoes": {"type": "string", "example": "Professor responsável pela turma do 7º ano"}
                 },
-                "required": ["nome", "email"]
+                "required": ["nome", "idade", "email", "materia"]
             }
         }
     ],
-    "responses": {201: {"description": "Professor criado com sucesso."}}
+    "responses": {
+        201: {"description": "Professor criado com sucesso."},
+        400: {"description": "Erro de dados inválidos."}
+    }
 })
 def create_professor():
     data = request.get_json() or {}
     nome = data.get("nome")
+    idade = data.get("idade")
     email = data.get("email")
-    area = data.get("area")
+    materia = data.get("materia")
+    observacoes = data.get("observacoes")
 
-    if not nome or not email:
-        return jsonify({"error": "Nome e email são obrigatórios"}), 400
+    if not all([nome, idade, email, materia]):
+        return jsonify({"error": "Campos 'nome', 'idade', 'email' e 'materia' são obrigatórios"}), 400
 
-    prof = Professor(nome=nome, email=email, area=area)
+    # Evita duplicar e-mails
+    if Professor.query.filter_by(email=email).first():
+        return jsonify({"error": "Já existe um professor com este e-mail."}), 400
+
+    prof = Professor(
+        nome=nome,
+        idade=idade,
+        email=email,
+        materia=materia,
+        observacoes=observacoes
+    )
     db.session.add(prof)
     db.session.commit()
-    return jsonify({"id": prof.id, "nome": prof.nome, "email": prof.email, "area": prof.area}), 201
+
+    return jsonify({
+        "id": prof.id,
+        "nome": prof.nome,
+        "idade": prof.idade,
+        "email": prof.email,
+        "materia": prof.materia,
+        "observacoes": prof.observacoes
+    }), 201
 
 
 # READ (GET ALL)
@@ -184,7 +209,14 @@ def create_professor():
 })
 def list_professores():
     professores = Professor.query.all()
-    result = [{"id": p.id, "nome": p.nome, "email": p.email, "area": p.area} for p in professores]
+    result = [{
+        "id": p.id,
+        "nome": p.nome,
+        "idade": p.idade,
+        "email": p.email,
+        "materia": p.materia,
+        "observacoes": p.observacoes
+    } for p in professores]
     return jsonify(result)
 
 
@@ -194,20 +226,30 @@ def list_professores():
     "tags": ["Professores"],
     "description": "Busca um professor pelo ID.",
     "parameters": [{"name": "prof_id", "in": "path", "type": "integer", "required": True}],
-    "responses": {200: {"description": "Professor encontrado."}, 404: {"description": "Professor não encontrado."}}
+    "responses": {
+        200: {"description": "Professor encontrado."},
+        404: {"description": "Professor não encontrado."}
+    }
 })
 def get_professor(prof_id):
     prof = Professor.query.get(prof_id)
     if not prof:
         return jsonify({"error": "Professor não encontrado"}), 404
-    return jsonify({"id": prof.id, "nome": prof.nome, "email": prof.email, "area": prof.area})
+    return jsonify({
+        "id": prof.id,
+        "nome": prof.nome,
+        "idade": prof.idade,
+        "email": prof.email,
+        "materia": prof.materia,
+        "observacoes": prof.observacoes
+    })
 
 
 # UPDATE (PUT)
 @bp.put("/professores/<int:prof_id>")
 @swag_from({
     "tags": ["Professores"],
-    "description": "Atualiza os dados de um professor.",
+    "description": "Atualiza os dados de um professor existente.",
     "parameters": [
         {"name": "prof_id", "in": "path", "type": "integer", "required": True},
         {
@@ -217,13 +259,18 @@ def get_professor(prof_id):
                 "type": "object",
                 "properties": {
                     "nome": {"type": "string"},
+                    "idade": {"type": "integer"},
                     "email": {"type": "string"},
-                    "area": {"type": "string"}
+                    "materia": {"type": "string"},
+                    "observacoes": {"type": "string"}
                 }
             }
         }
     ],
-    "responses": {200: {"description": "Professor atualizado."}, 404: {"description": "Professor não encontrado."}}
+    "responses": {
+        200: {"description": "Professor atualizado."},
+        404: {"description": "Professor não encontrado."}
+    }
 })
 def update_professor(prof_id):
     prof = Professor.query.get(prof_id)
@@ -232,19 +279,32 @@ def update_professor(prof_id):
 
     data = request.get_json() or {}
     prof.nome = data.get("nome", prof.nome)
+    prof.idade = data.get("idade", prof.idade)
     prof.email = data.get("email", prof.email)
-    prof.area = data.get("area", prof.area)
+    prof.materia = data.get("materia", prof.materia)
+    prof.observacoes = data.get("observacoes", prof.observacoes)
+
     db.session.commit()
-    return jsonify({"id": prof.id, "nome": prof.nome, "email": prof.email, "area": prof.area})
+    return jsonify({
+        "id": prof.id,
+        "nome": prof.nome,
+        "idade": prof.idade,
+        "email": prof.email,
+        "materia": prof.materia,
+        "observacoes": prof.observacoes
+    })
 
 
 # DELETE
 @bp.delete("/professores/<int:prof_id>")
 @swag_from({
     "tags": ["Professores"],
-    "description": "Remove um professor.",
+    "description": "Remove um professor pelo ID.",
     "parameters": [{"name": "prof_id", "in": "path", "type": "integer", "required": True}],
-    "responses": {204: {"description": "Professor removido."}, 404: {"description": "Professor não encontrado."}}
+    "responses": {
+        204: {"description": "Professor removido."},
+        404: {"description": "Professor não encontrado."}
+    }
 })
 def delete_professor(prof_id):
     prof = Professor.query.get(prof_id)
@@ -254,7 +314,6 @@ def delete_professor(prof_id):
     db.session.delete(prof)
     db.session.commit()
     return "", 204
-
 # -----------------------
 # CRUD DE TURMAS
 # -----------------------
